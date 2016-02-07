@@ -38,6 +38,7 @@ public class Main {
         System.out.println("Give passphrase/PIN: ");
         String sKey = new Scanner(System.in).nextLine();
         String sEncrypt = Crypto.encrypt(s,sKey,sr, true);
+
         System.out.println(sEncrypt);
         //String sDecrypt = Crypto.decrypt(sEncrypt, true);
         System.out.println("-----------------------------------------------\n");
