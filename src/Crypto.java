@@ -1,14 +1,21 @@
+import com.sun.xml.internal.messaging.saaj.packaging.mime.util.BASE64DecoderStream;
+import com.sun.xml.internal.messaging.saaj.packaging.mime.util.BASE64EncoderStream;
+
 import javax.crypto.*;
-import javax.crypto.spec.DESKeySpec;
-import javax.crypto.spec.SecretKeySpec;
+import javax.crypto.spec.IvParameterSpec;
+import java.io.UnsupportedEncodingException;
 import java.security.*;
-import java.security.spec.InvalidKeySpecException;
+import java.util.Arrays;
 import java.util.Base64;
+
+import static javax.crypto.Cipher.ENCRYPT_MODE;
 
 /**
  * Created by Gilles Callebaut on 4/02/2016.
  */
 public class Crypto {
+    private static Object DESCipher;
+
     public static String digest(byte[] bytes, String algorithm) {
         MessageDigest md;
         byte[] digest;
@@ -20,7 +27,7 @@ public class Crypto {
             System.err.println(e.getLocalizedMessage());
             return null;
         }
-        return toBase64String(digest);
+        return encodeToBase64String(digest);
     }
 
     public static SecureRandom getRandom(boolean custom) {
@@ -35,38 +42,76 @@ public class Crypto {
         return sr;
     }
 
-    public static String encrypt(String s, String key, SecureRandom sr, boolean symmetric) {
-        Cipher c =null;
-        if (symmetric) {
-            try {
-                DESKeySpec desKeySpec = new DESKeySpec(key.getBytes());
-                SecretKey sk = SecretKeyFactory.getInstance("DES").generateSecret(desKeySpec);
-                c = Cipher.getInstance("DES");
-                c.init(Cipher.ENCRYPT_MODE, sk);
-            } catch (NoSuchAlgorithmException e) {
-                System.err.println(e.getLocalizedMessage());
-                return null;
-            } catch (NoSuchPaddingException e) {
-                System.err.println(e.getLocalizedMessage());
-                return null;
-            } catch (InvalidKeySpecException e) {
-                e.printStackTrace();
-            } catch (InvalidKeyException e) {
-                System.err.println(e.getLocalizedMessage());
-                return null;
-            }
-        }
-        if (c != null) {
-            try {
-                return toBase64String(c.doFinal(s.getBytes()));
-            } catch (IllegalBlockSizeException | BadPaddingException e) {
-                e.printStackTrace();
-            }
+    public static String encrypt(String encryptMe, Key key, Cipher c) {
+        try {
+            c.init(ENCRYPT_MODE, key);
+            return encodeToBase64String(c.doFinal(encryptMe.getBytes()));
+        } catch (InvalidKeyException | IllegalBlockSizeException | BadPaddingException e) {
+            e.printStackTrace();
         }
         return null;
     }
 
-    public static String toBase64String(byte[] b){
-        return String.valueOf(Base64.getEncoder().encode(b));
+    public static String decrypt(String decryptMe, Key key, Cipher c, byte[] iv) {
+        try {
+            byte[] d = decodeToBase64String(decryptMe);
+            if(iv!=null) c.init(Cipher.DECRYPT_MODE, key, new IvParameterSpec(iv));
+            else c.init(Cipher.DECRYPT_MODE, key);
+            return new String(c.doFinal(d), "UTF-8");
+        } catch (InvalidKeyException | IllegalBlockSizeException | BadPaddingException | InvalidAlgorithmParameterException | UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public static String encodeToBase64String(byte[] b){
+        return new String(BASE64EncoderStream.encode(b));
+    }
+
+    public static byte[] decodeToBase64String(String s){
+        return BASE64DecoderStream.decode(s.getBytes());
+    }
+
+    public static SecretKey generateSecretKey(SecureRandom sr) {
+        try {
+            KeyGenerator keyGen = KeyGenerator.getInstance("DES");
+            keyGen.init(sr);
+            return keyGen.generateKey();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public static KeyPair generateKeyPair(SecureRandom sr) {
+        try {
+            KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
+            keyGen.initialize(1024,sr);
+            return keyGen.generateKeyPair();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public static Cipher getDESCipher() {
+        try {
+            return  Cipher.getInstance("DES/CBC/PKCS5PAdding");
+        } catch (NoSuchAlgorithmException | NoSuchPaddingException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+
+
+
+    public static Cipher getRSACipher() {
+        try {
+            return  Cipher.getInstance("RSA");
+        } catch (NoSuchAlgorithmException | NoSuchPaddingException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 }

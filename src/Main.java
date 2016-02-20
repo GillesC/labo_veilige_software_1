@@ -1,13 +1,21 @@
+import com.sun.xml.internal.messaging.saaj.packaging.mime.util.BASE64DecoderStream;
+import com.sun.xml.internal.messaging.saaj.util.Base64;
+
 import javax.crypto.Cipher;
-import javax.crypto.NoSuchPaddingException;
-import java.security.NoSuchAlgorithmException;
+import javax.crypto.SecretKey;
+import java.io.UnsupportedEncodingException;
+import java.security.KeyPair;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.SecureRandom;
-import java.util.Scanner;
 
 /**
  * Created by Gilles Callebaut on 4/02/2016.
  */
 public class Main {
+    private static final int NUM_ITERATIONS_TEST = 1;
+
+
     public static void main(String[] args) {
         Person person1 = new Person("Gilles","Lokeren","0486459157");
         Person person1Fake = new Person("Gilles","Gent","0486459123");
@@ -33,14 +41,46 @@ public class Main {
         //System.out.println(sr2.nextInt());
         System.out.println("-----------------------------------------------\n");
 
-        System.out.println("-------------------- Symm Key -----------------");
-        String s = "Hallo";
-        System.out.println("Give passphrase/PIN: ");
-        String sKey = new Scanner(System.in).nextLine();
-        String sEncrypt = Crypto.encrypt(s,sKey,sr, true);
-
-        System.out.println(sEncrypt);
-        //String sDecrypt = Crypto.decrypt(sEncrypt, true);
+        System.out.println("-------------------- Symmetric Key ------------");
+        long totalTimeSym = 0;
+        long startTime, stopTime;
+        for(int i=0;i<NUM_ITERATIONS_TEST;i++) {
+            startTime = System.nanoTime();
+            String encryptMe = "Hallo";
+            System.out.println("Text to encrypt: " + encryptMe);
+            SecretKey sKey = Crypto.generateSecretKey(sr);
+            Cipher eCipher = Crypto.getDESCipher();
+            String sEncrypt = Crypto.encrypt(encryptMe, sKey, eCipher);
+            System.out.println("Encrypted text: " + sEncrypt);
+            String sDecrypt = Crypto.decrypt(sEncrypt, sKey, Crypto.getDESCipher(), eCipher.getIV());
+            System.out.println("Decrypted text: " + sDecrypt);
+            stopTime = System.nanoTime();
+            totalTimeSym += stopTime-startTime;
+        }
+        System.out.println("Mean execution time (per cycle) "+ (totalTimeSym/1000000) +" ms over "+NUM_ITERATIONS_TEST+ " tests.");
         System.out.println("-----------------------------------------------\n");
+
+
+        System.out.println("-------------------- Asymmetric Key ------------");
+        for(int i=0;i<NUM_ITERATIONS_TEST;i++) {
+            startTime = System.nanoTime();
+            String encryptMe = "Hallo";
+            System.out.println("Text to encrypt: " + encryptMe);
+            KeyPair keyPair = Crypto.generateKeyPair(sr);
+            PrivateKey privateKey = keyPair.getPrivate();
+            PublicKey publicKey = keyPair.getPublic();
+            Cipher eCipher = Crypto.getRSACipher();
+            String sEncrypt = Crypto.encrypt(encryptMe, publicKey, eCipher);
+            System.out.println("Encrypted text: " + sEncrypt);
+            String sDecrypt = Crypto.decrypt(sEncrypt, privateKey, Crypto.getRSACipher(), null);
+            System.out.println("Decrypted text: " + sDecrypt);
+            System.out.println("Public key: "+ publicKey+ "\n KEY itself: " + Crypto.encodeToBase64String(publicKey.getEncoded()));
+            stopTime = System.nanoTime();
+            totalTimeSym += stopTime-startTime;
+       }
+        System.out.println("Mean execution time (per cycle) "+ (totalTimeSym/1000000) +" ms over "+NUM_ITERATIONS_TEST+ " tests.");
+        System.out.println("-----------------------------------------------\n");
+
     }
+
 }
