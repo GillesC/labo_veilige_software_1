@@ -114,4 +114,30 @@ public class Crypto {
         }
         return null;
     }
+
+    public static byte[] sign(byte[] data, PrivateKey privateKey) {
+        Signature signer;
+        try {
+            signer = Signature.getInstance("SHA1withRSA");
+            signer.initSign(privateKey);
+            signer.update(data);
+            return (signer.sign());
+        } catch (NoSuchAlgorithmException | InvalidKeyException | SignatureException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public static boolean verify(byte[] data, PublicKey publicKey, byte[] sign) {
+        Signature signer;
+        try {
+            signer = Signature.getInstance("SHA1withRSA");
+            signer.initVerify(publicKey);
+            signer.update(data);
+            return (signer.verify(sign));
+        } catch (NoSuchAlgorithmException | InvalidKeyException | SignatureException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
 }

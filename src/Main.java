@@ -1,16 +1,12 @@
-import com.sun.xml.internal.messaging.saaj.packaging.mime.util.BASE64DecoderStream;
-import com.sun.xml.internal.messaging.saaj.util.Base64;
-
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
-import java.io.UnsupportedEncodingException;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SecureRandom;
 
 /**
- * Created by Gilles Callebaut on 4/02/2016.
+ * Learning cryptograpic primitives
  */
 public class Main {
     private static final int NUM_ITERATIONS_TEST = 1;
@@ -62,13 +58,15 @@ public class Main {
 
 
         System.out.println("-------------------- Asymmetric Key ------------");
+        PrivateKey privateKey = null;
+        PublicKey publicKey = null;
         for(int i=0;i<NUM_ITERATIONS_TEST;i++) {
             startTime = System.nanoTime();
             String encryptMe = "Hallo";
             System.out.println("Text to encrypt: " + encryptMe);
             KeyPair keyPair = Crypto.generateKeyPair(sr);
-            PrivateKey privateKey = keyPair.getPrivate();
-            PublicKey publicKey = keyPair.getPublic();
+            privateKey = keyPair.getPrivate();
+            publicKey = keyPair.getPublic();
             Cipher eCipher = Crypto.getRSACipher();
             String sEncrypt = Crypto.encrypt(encryptMe, publicKey, eCipher);
             System.out.println("Encrypted text: " + sEncrypt);
@@ -81,6 +79,14 @@ public class Main {
         System.out.println("Mean execution time (per cycle) "+ (totalTimeSym/1000000) +" ms over "+NUM_ITERATIONS_TEST+ " tests.");
         System.out.println("-----------------------------------------------\n");
 
+
+        System.out.println("------------------- Signature ------------------");
+        byte[] signature = Crypto.sign(person1.getBytes(), privateKey);
+        boolean verified = Crypto.verify(person1.getBytes(), publicKey, signature);
+        System.out.println("Is Person1 verified? " + verified);
+        verified = Crypto.verify(person1Fake.getBytes(), publicKey, signature);
+        System.out.println("Is Person2 verified? " + verified);
+        System.out.println("-----------------------------------------------\n");
     }
 
 }
