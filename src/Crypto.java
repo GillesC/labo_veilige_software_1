@@ -74,7 +74,7 @@ public class Crypto {
 
     public static SecretKey generateSecretKey(SecureRandom sr) {
         try {
-            KeyGenerator keyGen = KeyGenerator.getInstance("DES");
+            KeyGenerator keyGen = KeyGenerator.getInstance("AES");
             keyGen.init(sr);
             return keyGen.generateKey();
         } catch (NoSuchAlgorithmException e) {
@@ -94,9 +94,9 @@ public class Crypto {
         return null;
     }
 
-    public static Cipher getDESCipher() {
+    public static Cipher getAESCipher() {
         try {
-            return  Cipher.getInstance("DES/CBC/PKCS5PAdding");
+            return Cipher.getInstance("AES/CBC/PKCS5PAdding");
         } catch (NoSuchAlgorithmException | NoSuchPaddingException e) {
             e.printStackTrace();
         }
